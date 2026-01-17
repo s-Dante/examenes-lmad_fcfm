@@ -1,0 +1,1 @@
+Okay la idea de esta carpeta es que en ella se encuentren diferentes requests segun sea necesario
