@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
+use App\Models\ProgramaAcademico;
+use App\Enums\RolDeUsuario;
+
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
  */
@@ -24,12 +27,27 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'name' => fake()->userName(),
+            'nombre' => $this->faker->firstName(),
+            'apellido_paterno' => $this->faker->lastName(),
+            'apellido_materno' => $this->faker->lastName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'rol' => RolDeUsuario::COORDINADOR,
+            'estatus' => true,
+            'carrera_id' => ProgramaAcademico::inRandomOrder()->first()?->id ?? ProgramaAcademico::factory(),
         ];
+    }
+
+    // Crear admins
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rol' => RolDeUsuario::ADMIN,
+            'carrera_id' => null, // Admin global no tiene carrera
+        ]);
     }
 
     /**
