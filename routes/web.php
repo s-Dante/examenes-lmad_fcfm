@@ -2,6 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+use App\Http\Controllers\ConsultaController;
+
+
+// Route::get('/', function () {
+//     return view('welcome');
+// });
+
+// Ruta para la consulta de exámenes
+Route::get('/', [ConsultaController::class, 'index'])->name('inicio');
