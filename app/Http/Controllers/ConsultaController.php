@@ -2,41 +2,73 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Examen;
-use App\Models\ProgramaAcademico;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+
+
+use App\Models\ProgramaAcademico;
+use App\Models\PlanAcademico;
 
 class ConsultaController extends Controller
 {
-    public function index(Request $request): View
+    /**
+     * Muestra la vista principal de consulta.
+     */
+    public function index()
     {
-        $busqueda = $request->input('q');
-        $carreraId = $request->input('carrera');
+        // Solo carreras activas
+        $carreras = ProgramaAcademico::where('estatus', true)->get();
+        return view('consulta.index', compact('carreras'));
+    }
 
-        $query = Examen::with([
-            'grupo.materia', 
-            'grupo.profesor', 
-            'salon', 
-            'grupo.periodoAcademico'
-        ])
-        ->where('estatus', true);
+    /**
+     * AJAX: Obtiene los semestres disponibles para el plan activo de una carrera.
+     */
+    public function getSemestres($programa_id): JsonResponse
+    {
+        // 1. Buscamos el plan activo de esa carrera
+        $planActivo = PlanAcademico::where('programa_academico_id', $programa_id)
+                        ->where('estatus', true)
+                        ->first();
 
-        if ($busqueda) {
-            $query->whereHas('grupo', function ($q) use ($busqueda) {
-                $q->whereHas('materia', function ($m) use ($busqueda) {
-                    $m->where('nombre', 'like', "%{$busqueda}%")
-                      ->orWhere('codigo', 'like', "%{$busqueda}%");
-                })
-                ->orWhere('nombre', 'like', "%{$busqueda}%");
-            });
+        if (!$planActivo) {
+            return response()->json([], 404); // No hay plan activo
         }
 
+        // 2. Obtenemos los semestres distintos desde la tabla pivote
+        // Usamos la relación 'materias()' que definiste en el modelo PlanAcademico
+        // pero consultamos directamente sobre la tabla pivote para ser más eficientes.
+        $semestres = DB::table('tbl_materias_por_planes_academicos')
+                        ->where('plan_academico_id', $planActivo->id)
+                        ->select('semestre')
+                        ->distinct()
+                        ->orderBy('semestre', 'asc')
+                        ->pluck('semestre'); // Devuelve array simple: [1, 2, 3...]
 
+        return response()->json($semestres);
+    }
 
-        // 4. Ordenar por fecha (los más próximos primero)
-        $examenes = $query->orderBy('fecha_hora', 'asc')->paginate(10);
+    /**
+     * AJAX: Obtiene las materias de un semestre específico del plan activo.
+     */
+    public function getMaterias($programa_id, $semestre): JsonResponse
+    {
+        $planActivo = PlanAcademico::where('programa_academico_id', $programa_id)
+                        ->where('estatus', true)
+                        ->first();
 
-        return view('welcome', compact('examenes', 'busqueda'));
+        if (!$planActivo) {
+            return response()->json([], 404);
+        }
+
+        // Obtenemos las materias filtradas por semestre usando la relación BelongsToMany
+        $materias = $planActivo->materias()
+                        ->wherePivot('semestre', $semestre)
+                        ->where('tbl_materias.estatus', true) // Asegurar que la materia esté activa
+                        ->orderBy('nombre', 'asc')
+                        ->get(['tbl_materias.id', 'tbl_materias.nombre']);
+
+        return response()->json($materias);
     }
 }

@@ -1,0 +1,59 @@
+/* resources/css/views/consulta.css */
+
+/* --- Calendario Personalizado --- */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
+
+.day-name {
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6b7280;
+    padding-bottom: 0.5rem;
+}
+
+.day-cell {
+    aspect-ratio: 1 / 1; /* Cuadrados perfectos */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px; /* Círculos */
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.day-cell:hover:not(.empty) {
+    background-color: #f3f4f6;
+}
+
+/* Día actual */
+.day-cell.current-day {
+    background-color: #1e3a8a; /* Azul UANL oscuro */
+    color: white;
+    font-weight: bold;
+}
+
+/* Día con examen (indicador visual) */
+.day-cell.has-exam {
+    position: relative;
+    font-weight: 600;
+    color: #1e3a8a;
+}
+
+.day-cell.has-exam::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    width: 4px;
+    height: 4px;
+    background-color: #ef4444; /* Rojo */
+    border-radius: 50%;
+}
+
+.day-cell.empty {
+    cursor: default;
+}
